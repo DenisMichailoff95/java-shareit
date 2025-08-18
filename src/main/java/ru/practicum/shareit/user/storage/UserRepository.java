@@ -16,7 +16,5 @@ public interface UserRepository {
 
     void deleteById(Long id);
 
-
-
     User getById(Long id);
 }

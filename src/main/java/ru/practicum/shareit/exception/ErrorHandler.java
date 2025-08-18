@@ -31,6 +31,3 @@ public class ErrorHandler {
         return new ErrorResponse("Произошла непредвиденная ошибка");
     }
 }
-
-record ErrorResponse(String error) {
-}
