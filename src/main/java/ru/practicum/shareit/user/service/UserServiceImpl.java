@@ -27,12 +27,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getById(Long id) {
+        if (id == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
         return UserMapper.toUserDto(userRepository.getById(id));
     }
 
     @Override
     @Transactional
     public UserDto create(UserDto userDto) {
+        if (userDto == null) {
+            throw new ValidationException("UserDto cannot be null");
+        }
+
         validateUserDto(userDto);
         User user = UserMapper.toUser(userDto);
         return UserMapper.toUserDto(userRepository.save(user));
@@ -41,7 +49,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDto update(Long id, UserDto userDto) {
-        if (userDto == null || (userDto.getName() == null && userDto.getEmail() == null)) {
+        if (id == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
+        if (userDto == null) {
+            throw new ValidationException("UserDto cannot be null");
+        }
+
+        if (userDto.getName() == null && userDto.getEmail() == null) {
             throw new ValidationException("Не указаны поля для обновления");
         }
 
@@ -64,11 +80,19 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void delete(Long id) {
+        if (id == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
         userRepository.deleteById(id);
     }
 
     @Override
     public User getUserById(Long id) {
+        if (id == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
         return userRepository.getById(id);
     }
 

@@ -22,6 +22,14 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto create(Long userId, ItemDto itemDto) {
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
+        if (itemDto == null) {
+            throw new ValidationException("ItemDto cannot be null");
+        }
+
         // Проверяем, что пользователь существует
         userService.getById(userId);
 
@@ -43,6 +51,18 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
+        if (itemId == null) {
+            throw new ValidationException("Item ID cannot be null");
+        }
+
+        if (itemDto == null) {
+            throw new ValidationException("ItemDto cannot be null");
+        }
+
         Item existingItem = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
@@ -66,12 +86,24 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto getById(Long userId, Long itemId) {
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
+        if (itemId == null) {
+            throw new ValidationException("Item ID cannot be null");
+        }
+
         return ItemMapper.toItemDto(itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь не найдена")));
     }
 
     @Override
     public List<ItemDto> getAllByOwner(Long userId) {
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
         return itemRepository.findAllByOwnerId(userId).stream()
                 .map(ItemMapper::toItemDto)
                 .collect(Collectors.toList());
@@ -86,5 +118,15 @@ public class ItemServiceImpl implements ItemService {
                 .filter(Item::getAvailable)
                 .map(ItemMapper::toItemDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Item getItemById(Long itemId) {
+        if (itemId == null) {
+            throw new ValidationException("Item ID cannot be null");
+        }
+
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
     }
 }
