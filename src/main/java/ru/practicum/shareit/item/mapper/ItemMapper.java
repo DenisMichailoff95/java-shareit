@@ -4,6 +4,9 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.exception.ValidationException;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class ItemMapper {
     public static ItemDto toItemDto(Item item) {
         if (item == null) {
@@ -31,5 +34,25 @@ public class ItemMapper {
                 .available(itemDto.getAvailable())
                 .requestId(itemDto.getRequestId())
                 .build();
+    }
+
+    public static List<ItemDto> toItemDtoList(List<Item> items) {
+        if (items == null) {
+            throw new ValidationException("Items list cannot be null");
+        }
+
+        return items.stream()
+                .map(ItemMapper::toItemDto)
+                .collect(Collectors.toList());
+    }
+
+    public static List<Item> toItemList(List<ItemDto> itemDtos) {
+        if (itemDtos == null) {
+            throw new ValidationException("ItemDtos list cannot be null");
+        }
+
+        return itemDtos.stream()
+                .map(ItemMapper::toItem)
+                .collect(Collectors.toList());
     }
 }

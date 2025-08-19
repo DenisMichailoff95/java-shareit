@@ -10,7 +10,6 @@ import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.service.UserService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -104,20 +103,20 @@ public class ItemServiceImpl implements ItemService {
             throw new ValidationException("User ID cannot be null");
         }
 
-        return itemRepository.findAllByOwnerId(userId).stream()
-                .map(ItemMapper::toItemDto)
-                .collect(Collectors.toList());
+        return ItemMapper.toItemDtoList(itemRepository.findAllByOwnerId(userId));
     }
 
     @Override
     public List<ItemDto> search(String text) {
         if (text == null || text.isBlank()) {
-            return new ArrayList<>();
+            return List.of();
         }
-        return itemRepository.search(text).stream()
+
+        List<Item> availableItems = itemRepository.search(text).stream()
                 .filter(Item::getAvailable)
-                .map(ItemMapper::toItemDto)
                 .collect(Collectors.toList());
+
+        return ItemMapper.toItemDtoList(availableItems);
     }
 
     @Override
