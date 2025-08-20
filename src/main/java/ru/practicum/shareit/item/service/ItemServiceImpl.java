@@ -1,0 +1,131 @@
+package ru.practicum.shareit.item.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.item.storage.ItemRepository;
+import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.mapper.ItemMapper;
+import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.service.UserService;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class ItemServiceImpl implements ItemService {
+    private final ItemRepository itemRepository;
+    private final UserService userService;
+
+    @Override
+    public ItemDto create(Long userId, ItemDto itemDto) {
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
+        if (itemDto == null) {
+            throw new ValidationException("ItemDto cannot be null");
+        }
+
+        // Проверяем, что пользователь существует
+        userService.getById(userId);
+
+        if (itemDto.getName() == null || itemDto.getName().isBlank()) {
+            throw new ValidationException("Название не может быть пустым");
+        }
+        if (itemDto.getDescription() == null || itemDto.getDescription().isBlank()) {
+            throw new ValidationException("Описание не может быть пустым");
+        }
+        if (itemDto.getAvailable() == null) {
+            throw new ValidationException("Статус доступности не может быть null");
+        }
+
+        Item item = ItemMapper.toItem(itemDto);
+        item.setOwner(userService.getUserById(userId));
+        Item savedItem = itemRepository.save(item);
+        return ItemMapper.toItemDto(savedItem);
+    }
+
+    @Override
+    public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
+        if (itemId == null) {
+            throw new ValidationException("Item ID cannot be null");
+        }
+
+        if (itemDto == null) {
+            throw new ValidationException("ItemDto cannot be null");
+        }
+
+        Item existingItem = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+
+        if (!existingItem.getOwner().getId().equals(userId)) {
+            throw new NotFoundException("Редактировать может только владелец");
+        }
+
+        if (itemDto.getName() != null) {
+            existingItem.setName(itemDto.getName());
+        }
+        if (itemDto.getDescription() != null) {
+            existingItem.setDescription(itemDto.getDescription());
+        }
+        if (itemDto.getAvailable() != null) {
+            existingItem.setAvailable(itemDto.getAvailable());
+        }
+
+        Item updatedItem = itemRepository.save(existingItem);
+        return ItemMapper.toItemDto(updatedItem);
+    }
+
+    @Override
+    public ItemDto getById(Long userId, Long itemId) {
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
+        if (itemId == null) {
+            throw new ValidationException("Item ID cannot be null");
+        }
+
+        return ItemMapper.toItemDto(itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена")));
+    }
+
+    @Override
+    public List<ItemDto> getAllByOwner(Long userId) {
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+
+        return ItemMapper.toItemDtoList(itemRepository.findAllByOwnerId(userId));
+    }
+
+    @Override
+    public List<ItemDto> search(String text) {
+        if (text == null || text.isBlank()) {
+            return List.of();
+        }
+
+        List<Item> availableItems = itemRepository.search(text).stream()
+                .filter(Item::getAvailable)
+                .collect(Collectors.toList());
+
+        return ItemMapper.toItemDtoList(availableItems);
+    }
+
+    @Override
+    public Item getItemById(Long itemId) {
+        if (itemId == null) {
+            throw new ValidationException("Item ID cannot be null");
+        }
+
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+    }
+}
