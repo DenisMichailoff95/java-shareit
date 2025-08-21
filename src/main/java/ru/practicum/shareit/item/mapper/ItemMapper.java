@@ -45,14 +45,4 @@ public class ItemMapper {
                 .map(ItemMapper::toItemDto)
                 .collect(Collectors.toList());
     }
-
-    public static List<Item> toItemList(List<ItemDto> itemDtos) {
-        if (itemDtos == null) {
-            throw new ValidationException("ItemDtos list cannot be null");
-        }
-
-        return itemDtos.stream()
-                .map(ItemMapper::toItem)
-                .collect(Collectors.toList());
-    }
 }

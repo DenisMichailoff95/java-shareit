@@ -74,4 +74,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findFirstByItemIdAndStartAfterOrderByStartAsc(Long itemId, LocalDateTime now);
 
     List<Booking> findByItemIdAndBookerIdAndEndBefore(Long itemId, Long bookerId, LocalDateTime now);
+
+    @Query("SELECT b FROM Booking b JOIN FETCH b.item JOIN FETCH b.booker " +
+            "WHERE b.item.id IN :itemIds AND b.end < :now " +
+            "ORDER BY b.end DESC")
+    List<Booking> findLastBookingsForItems(@Param("itemIds") List<Long> itemIds,
+                                           @Param("now") LocalDateTime now);
+
+    @Query("SELECT b FROM Booking b JOIN FETCH b.item JOIN FETCH b.booker " +
+            "WHERE b.item.id IN :itemIds AND b.start > :now " +
+            "ORDER BY b.start ASC")
+    List<Booking> findNextBookingsForItems(@Param("itemIds") List<Long> itemIds,
+                                           @Param("now") LocalDateTime now);
+
 }
