@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
@@ -59,7 +60,7 @@ public class ItemServiceImpl implements ItemService {
                 .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
         if (!existingItem.getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Редактировать может только владелец");
+            throw new ForbiddenException("Редактировать может только владелец");
         }
 
         if (itemDto.getName() != null) existingItem.setName(itemDto.getName());

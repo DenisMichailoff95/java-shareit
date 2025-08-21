@@ -12,6 +12,7 @@ import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.BookingStatus;
 import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.model.Item;
@@ -34,14 +35,17 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponseDto create(Long userId, BookingDto bookingDto) {
         validateBookingDto(bookingDto);
 
+        // Проверяем, что пользователь существует
         userService.getById(userId);
 
         Item item = itemService.getItemById(bookingDto.getItemId());
 
+        // Владелец не может бронировать свою вещь - 404
         if (item.getOwner().getId().equals(userId)) {
             throw new NotFoundException("Владелец не может бронировать свою вещь");
         }
 
+        // Предмет недоступен - 400
         if (!item.getAvailable()) {
             throw new ValidationException("Предмет недоступен для бронирования");
         }
@@ -54,17 +58,25 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponseDto updateStatus(Long userId, Long bookingId, Boolean approved) {
-        if (userId == null) throw new ValidationException("User ID cannot be null");
-        if (bookingId == null) throw new ValidationException("Booking ID cannot be null");
-        if (approved == null) throw new ValidationException("Approved status cannot be null");
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+        if (bookingId == null) {
+            throw new ValidationException("Booking ID cannot be null");
+        }
+        if (approved == null) {
+            throw new ValidationException("Approved status cannot be null");
+        }
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
+        // Ключевое изменение: используем ForbiddenException вместо NotFoundException
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Только владелец может изменять статус бронирования");
+            throw new ForbiddenException("Только владелец может изменять статус бронирования");
         }
 
+        // Статус уже изменен - 400
         if (booking.getStatus() != BookingStatus.WAITING) {
             throw new ValidationException("Статус бронирования уже изменен");
         }
@@ -77,15 +89,20 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional(readOnly = true)
     public BookingResponseDto getById(Long userId, Long bookingId) {
-        if (userId == null) throw new ValidationException("User ID cannot be null");
-        if (bookingId == null) throw new ValidationException("Booking ID cannot be null");
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+        if (bookingId == null) {
+            throw new ValidationException("Booking ID cannot be null");
+        }
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
+        // Доступ запрещен - 404 (как в ТЗ)
         if (!booking.getBooker().getId().equals(userId) &&
                 !booking.getItem().getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Доступ к бронированию запрещен");
+            throw new NotFoundException("Бронирование не найдено");
         }
 
         return BookingMapper.toBookingResponseDto(booking);
@@ -94,9 +111,15 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional(readOnly = true)
     public List<BookingResponseDto> getAllByBooker(Long userId, String state, int from, int size) {
-        if (userId == null) throw new ValidationException("User ID cannot be null");
-        if (from < 0) throw new ValidationException("From must be positive");
-        if (size <= 0) throw new ValidationException("Size must be positive");
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+        if (from < 0) {
+            throw new ValidationException("From must be positive");
+        }
+        if (size <= 0) {
+            throw new ValidationException("Size must be positive");
+        }
 
         userService.getById(userId);
 
@@ -133,9 +156,15 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional(readOnly = true)
     public List<BookingResponseDto> getAllByOwner(Long userId, String state, int from, int size) {
-        if (userId == null) throw new ValidationException("User ID cannot be null");
-        if (from < 0) throw new ValidationException("From must be positive");
-        if (size <= 0) throw new ValidationException("Size must be positive");
+        if (userId == null) {
+            throw new ValidationException("User ID cannot be null");
+        }
+        if (from < 0) {
+            throw new ValidationException("From must be positive");
+        }
+        if (size <= 0) {
+            throw new ValidationException("Size must be positive");
+        }
 
         userService.getById(userId);
 
@@ -170,11 +199,23 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void validateBookingDto(BookingDto bookingDto) {
-        if (bookingDto == null) throw new ValidationException("BookingDto cannot be null");
-        if (bookingDto.getStart() == null) throw new ValidationException("Дата начала не может быть null");
-        if (bookingDto.getEnd() == null) throw new ValidationException("Дата окончания не может быть null");
-        if (bookingDto.getItemId() == null) throw new ValidationException("ID предмета не может быть null");
-        if (bookingDto.getEnd().isBefore(bookingDto.getStart())) throw new ValidationException("Дата окончания не может быть раньше даты начала");
-        if (bookingDto.getEnd().equals(bookingDto.getStart())) throw new ValidationException("Дата окончания не может совпадать с датой начала");
+        if (bookingDto == null) {
+            throw new ValidationException("BookingDto cannot be null");
+        }
+        if (bookingDto.getStart() == null) {
+            throw new ValidationException("Дата начала не может быть null");
+        }
+        if (bookingDto.getEnd() == null) {
+            throw new ValidationException("Дата окончания не может быть null");
+        }
+        if (bookingDto.getItemId() == null) {
+            throw new ValidationException("ID предмета не может быть null");
+        }
+        if (bookingDto.getEnd().isBefore(bookingDto.getStart())) {
+            throw new ValidationException("Дата окончания не может быть раньше даты начала");
+        }
+        if (bookingDto.getEnd().equals(bookingDto.getStart())) {
+            throw new ValidationException("Дата окончания не может совпадать с датой начала");
+        }
     }
 }
