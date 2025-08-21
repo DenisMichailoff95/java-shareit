@@ -94,7 +94,9 @@ public class UserServiceImpl implements UserService {
     }
 
     private void validateUserDto(UserDto userDto) {
-        if (userDto.getEmail() == null || userDto.getEmail().isBlank()) throw new ValidationException("Email не может быть пустым");
-        if (userDto.getName() == null || userDto.getName().isBlank()) throw new ValidationException("Имя не может быть пустым");
+        if (userDto.getEmail() == null || userDto.getEmail().isBlank())
+            throw new ValidationException("Email не может быть пустым");
+        if (userDto.getName() == null || userDto.getName().isBlank())
+            throw new ValidationException("Имя не может быть пустым");
     }
 }

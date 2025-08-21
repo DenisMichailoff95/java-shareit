@@ -39,8 +39,10 @@ public class ItemServiceImpl implements ItemService {
 
         userService.getById(userId);
 
-        if (itemDto.getName() == null || itemDto.getName().isBlank()) throw new ValidationException("Название не может быть пустым");
-        if (itemDto.getDescription() == null || itemDto.getDescription().isBlank()) throw new ValidationException("Описание не может быть пустым");
+        if (itemDto.getName() == null || itemDto.getName().isBlank())
+            throw new ValidationException("Название не может быть пустым");
+        if (itemDto.getDescription() == null || itemDto.getDescription().isBlank())
+            throw new ValidationException("Описание не может быть пустым");
         if (itemDto.getAvailable() == null) throw new ValidationException("Статус доступности не может быть null");
 
         Item item = ItemMapper.toItem(itemDto);
@@ -144,7 +146,8 @@ public class ItemServiceImpl implements ItemService {
     public CommentDto addComment(Long userId, Long itemId, CommentDto commentDto) {
         if (userId == null) throw new ValidationException("User ID cannot be null");
         if (itemId == null) throw new ValidationException("Item ID cannot be null");
-        if (commentDto == null || commentDto.getText() == null || commentDto.getText().isBlank()) throw new ValidationException("Текст комментария не может быть пустым");
+        if (commentDto == null || commentDto.getText() == null || commentDto.getText().isBlank())
+            throw new ValidationException("Текст комментария не может быть пустым");
 
         if (!hasUserBookedItem(itemId, userId, LocalDateTime.now())) {
             throw new ValidationException("Пользователь не брал эту вещь в аренду");
