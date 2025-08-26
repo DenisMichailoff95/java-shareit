@@ -1,7 +1,6 @@
 package ru.practicum.shareit.booking.dto;
 
 import lombok.*;
-import ru.practicum.shareit.booking.model.BookingStatus;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
@@ -26,6 +25,4 @@ public class BookingDto {
     @NotNull(message = "ID предмета не может быть null")
     private Long itemId;
 
-    private Long bookerId;
-    private BookingStatus status;
 }

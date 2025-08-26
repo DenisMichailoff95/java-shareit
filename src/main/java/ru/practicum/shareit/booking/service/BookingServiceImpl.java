@@ -17,6 +17,7 @@ import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
+import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
@@ -24,19 +25,19 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true) // Все методы по умолчанию read-only
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final UserService userService;
     private final ItemService itemService;
 
     @Override
-    @Transactional
+    @Transactional // Только этот метод требует записи
     public BookingResponseDto create(Long userId, BookingDto bookingDto) {
         validateBookingDto(bookingDto);
 
-        // Проверяем, что пользователь существует
-        userService.getById(userId);
-
+        // Получаем пользователя и предмет
+        User user = userService.getUserById(userId);
         Item item = itemService.getItemById(bookingDto.getItemId());
 
         // Владелец не может бронировать свою вещь - 404
@@ -49,13 +50,21 @@ public class BookingServiceImpl implements BookingService {
             throw new ValidationException("Предмет недоступен для бронирования");
         }
 
-        Booking booking = BookingMapper.toBooking(bookingDto, item, userService.getUserById(userId));
+        // Создаем бронирование с принудительным статусом WAITING
+        Booking booking = Booking.builder()
+                .start(bookingDto.getStart())
+                .end(bookingDto.getEnd())
+                .item(item)
+                .booker(user)
+                .status(BookingStatus.WAITING) // Всегда WAITING при создании
+                .build();
+
         Booking savedBooking = bookingRepository.save(booking);
         return BookingMapper.toBookingResponseDto(savedBooking);
     }
 
     @Override
-    @Transactional
+    @Transactional // Только этот метод требует записи
     public BookingResponseDto updateStatus(Long userId, Long bookingId, Boolean approved) {
         if (userId == null) {
             throw new ValidationException("User ID cannot be null");
@@ -70,23 +79,20 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
-        // Ключевое изменение: используем ForbiddenException вместо NotFoundException
         if (!booking.getItem().getOwner().getId().equals(userId)) {
             throw new ForbiddenException("Только владелец может изменять статус бронирования");
         }
 
-        // Статус уже изменен - 400
         if (booking.getStatus() != BookingStatus.WAITING) {
             throw new ValidationException("Статус бронирования уже изменен");
         }
 
         booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
-        Booking updatedBooking = bookingRepository.save(booking);
-        return BookingMapper.toBookingResponseDto(updatedBooking);
+        // Не вызываем save - изменения автоматически сохранятся при коммите транзакции
+        return BookingMapper.toBookingResponseDto(booking);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public BookingResponseDto getById(Long userId, Long bookingId) {
         if (userId == null) {
             throw new ValidationException("User ID cannot be null");
@@ -98,7 +104,6 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
-        // Доступ запрещен - 404 (как в ТЗ)
         if (!booking.getBooker().getId().equals(userId) &&
                 !booking.getItem().getOwner().getId().equals(userId)) {
             throw new NotFoundException("Бронирование не найдено");
@@ -108,7 +113,6 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<BookingResponseDto> getAllByBooker(Long userId, String state, int from, int size) {
         if (userId == null) {
             throw new ValidationException("User ID cannot be null");
@@ -153,7 +157,6 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<BookingResponseDto> getAllByOwner(Long userId, String state, int from, int size) {
         if (userId == null) {
             throw new ValidationException("User ID cannot be null");

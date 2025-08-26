@@ -15,17 +15,16 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true) // Все методы по умолчанию read-only
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override
-    @Transactional(readOnly = true)
     public List<UserDto> getAll() {
         return UserMapper.toUserDtoList(userRepository.findAll());
     }
 
     @Override
-    @Transactional(readOnly = true)
     public UserDto getById(Long id) {
         if (id == null) throw new ValidationException("User ID cannot be null");
 
@@ -35,7 +34,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+    @Transactional // Только этот метод требует записи
     public UserDto create(UserDto userDto) {
         if (userDto == null) throw new ValidationException("UserDto cannot be null");
 
@@ -51,7 +50,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+    @Transactional // Только этот метод требует записи
     public UserDto update(Long id, UserDto userDto) {
         if (id == null) throw new ValidationException("User ID cannot be null");
         if (userDto == null) throw new ValidationException("UserDto cannot be null");
@@ -73,7 +72,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+    @Transactional // Только этот метод требует записи
     public void delete(Long id) {
         if (id == null) throw new ValidationException("User ID cannot be null");
 
@@ -85,7 +84,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public User getUserById(Long id) {
         if (id == null) throw new ValidationException("User ID cannot be null");
 

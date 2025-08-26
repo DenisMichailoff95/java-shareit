@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true) // Все методы по умолчанию read-only
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserService userService;
@@ -34,7 +35,7 @@ public class ItemServiceImpl implements ItemService {
     private final CommentRepository commentRepository;
 
     @Override
-    @Transactional
+    @Transactional // Только этот метод требует записи
     public ItemDto create(Long userId, ItemDto itemDto) {
         if (userId == null) throw new ValidationException("User ID cannot be null");
         if (itemDto == null) throw new ValidationException("ItemDto cannot be null");
@@ -54,7 +55,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional
+    @Transactional // Только этот метод требует записи
     public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
         if (userId == null) throw new ValidationException("User ID cannot be null");
         if (itemId == null) throw new ValidationException("Item ID cannot be null");
@@ -76,7 +77,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ItemDto getById(Long userId, Long itemId) {
         try {
             if (userId == null) throw new ValidationException("User ID cannot be null");
@@ -128,7 +128,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<ItemDto> getAllByOwner(Long userId) {
         if (userId == null) throw new ValidationException("User ID cannot be null");
 
@@ -182,7 +181,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<ItemDto> search(String text) {
         if (text == null || text.isBlank()) return List.of();
 
@@ -191,7 +189,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Item getItemById(Long itemId) {
         if (itemId == null) throw new ValidationException("Item ID cannot be null");
 
@@ -200,7 +197,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional
+    @Transactional // Только этот метод требует записи
     public CommentDto addComment(Long userId, Long itemId, CommentDto commentDto) {
         if (userId == null) throw new ValidationException("User ID cannot be null");
         if (itemId == null) throw new ValidationException("Item ID cannot be null");
@@ -221,19 +218,16 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Booking> getLastBookingsForItem(Long itemId, LocalDateTime now) {
         return bookingRepository.findLastBookingsForItem(itemId, now);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Booking> getNextBookingsForItem(Long itemId, LocalDateTime now) {
         return bookingRepository.findNextBookingsForItem(itemId, now);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean hasUserBookedItem(Long itemId, Long userId, LocalDateTime now) {
         return bookingRepository.existsByItemIdAndBookerIdAndEndBefore(itemId, userId, now);
     }
