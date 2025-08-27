@@ -1,8 +1,7 @@
 package ru.practicum.shareit.item.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
-
-
 import jakarta.persistence.*;
 import ru.practicum.shareit.user.model.User;
 
@@ -20,12 +19,13 @@ public class Item {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 512)
     private String description;
 
     @Column(name = "is_available", nullable = false)
     private Boolean available;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
