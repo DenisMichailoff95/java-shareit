@@ -51,9 +51,11 @@ public class ItemController {
     }
 
     @GetMapping
-    public ResponseEntity<Object> getAllItems(@RequestHeader("X-Sharer-User-Id") long userId) {
-        log.info("Get all items for userId={}", userId);
-        return itemClient.getAllItems(userId);
+    public ResponseEntity<Object> getAllItems(@RequestHeader("X-Sharer-User-Id") long userId,
+                                              @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
+                                              @Positive @RequestParam(defaultValue = "10") Integer size) {
+        log.info("Get all items for userId={}, from={}, size={}", userId, from, size);
+        return itemClient.getAllItems(userId, from, size);
     }
 
     @GetMapping("/search")

@@ -2,6 +2,8 @@ package ru.practicum.shareit.item.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.model.Booking;
@@ -27,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true) // Все методы по умолчанию read-only
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserService userService;
@@ -35,7 +37,7 @@ public class ItemServiceImpl implements ItemService {
     private final CommentRepository commentRepository;
 
     @Override
-    @Transactional // Только этот метод требует записи
+    @Transactional
     public ItemDto create(Long userId, ItemDto itemDto) {
         if (userId == null) throw new ValidationException("User ID cannot be null");
         if (itemDto == null) throw new ValidationException("ItemDto cannot be null");
@@ -55,7 +57,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional // Только этот метод требует записи
+    @Transactional
     public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
         if (userId == null) throw new ValidationException("User ID cannot be null");
         if (itemId == null) throw new ValidationException("Item ID cannot be null");
@@ -87,7 +89,6 @@ public class ItemServiceImpl implements ItemService {
 
             ItemDto itemDto = ItemMapper.toItemDto(item);
 
-            // Загружаем бронирования только для владельца
             if (item.getOwner().getId().equals(userId)) {
                 LocalDateTime now = LocalDateTime.now();
 
@@ -108,7 +109,6 @@ public class ItemServiceImpl implements ItemService {
                 }
             }
 
-            // Загружаем комментарии с авторами
             List<CommentDto> comments = commentRepository.findAllByItemIdWithAuthor(itemId).stream()
                     .map(comment -> CommentDto.builder()
                             .id(comment.getId())
@@ -128,23 +128,23 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> getAllByOwner(Long userId) {
+    public List<ItemDto> getAllByOwner(Long userId, int from, int size) {
         if (userId == null) throw new ValidationException("User ID cannot be null");
+        if (from < 0) throw new ValidationException("From must be positive");
+        if (size <= 0) throw new ValidationException("Size must be positive");
 
-        List<Item> items = itemRepository.findAllByOwnerIdOrderById(userId);
+        Pageable pageable = PageRequest.of(from / size, size);
+        List<Item> items = itemRepository.findAllByOwnerIdOrderById(userId, pageable);
         LocalDateTime now = LocalDateTime.now();
 
-        // Получаем ID всех items для batch запросов
         List<Long> itemIds = items.stream().map(Item::getId).collect(Collectors.toList());
 
-        // Получаем все бронирования для items
         Map<Long, Booking> lastBookingsMap = bookingRepository.findLastBookingsForItems(itemIds, now).stream()
                 .collect(Collectors.toMap(booking -> booking.getItem().getId(), booking -> booking));
 
         Map<Long, Booking> nextBookingsMap = bookingRepository.findNextBookingsForItems(itemIds, now).stream()
                 .collect(Collectors.toMap(booking -> booking.getItem().getId(), booking -> booking));
 
-        // Получаем все комментарии для items с авторами
         Map<Long, List<CommentDto>> commentsMap = commentRepository.findAllByItemIdInWithAuthors(itemIds).stream()
                 .collect(Collectors.groupingBy(
                         comment -> comment.getItem().getId(),
@@ -160,7 +160,6 @@ public class ItemServiceImpl implements ItemService {
                 .map(item -> {
                     ItemDto itemDto = ItemMapper.toItemDto(item);
 
-                    // Устанавливаем бронирования
                     Booking lastBooking = lastBookingsMap.get(item.getId());
                     Booking nextBooking = nextBookingsMap.get(item.getId());
 
@@ -172,7 +171,6 @@ public class ItemServiceImpl implements ItemService {
                         itemDto.setNextBooking(new ItemDto.BookingInfo(nextBooking.getId(), nextBooking.getBooker().getId()));
                     }
 
-                    // Устанавливаем комментарии
                     itemDto.setComments(commentsMap.getOrDefault(item.getId(), List.of()));
 
                     return itemDto;
@@ -181,10 +179,13 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> search(String text) {
+    public List<ItemDto> search(String text, int from, int size) {
         if (text == null || text.isBlank()) return List.of();
+        if (from < 0) throw new ValidationException("From must be positive");
+        if (size <= 0) throw new ValidationException("Size must be positive");
 
-        List<Item> items = itemRepository.search(text);
+        Pageable pageable = PageRequest.of(from / size, size);
+        List<Item> items = itemRepository.search(text, pageable);
         return ItemMapper.toItemDtoList(items);
     }
 
@@ -197,7 +198,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional // Только этот метод требует записи
+    @Transactional
     public CommentDto addComment(Long userId, Long itemId, CommentDto commentDto) {
         if (userId == null) throw new ValidationException("User ID cannot be null");
         if (itemId == null) throw new ValidationException("Item ID cannot be null");

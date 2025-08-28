@@ -15,9 +15,9 @@ public interface ItemService {
 
     ItemDto getById(Long userId, Long itemId);
 
-    List<ItemDto> getAllByOwner(Long userId);
+    List<ItemDto> getAllByOwner(Long userId, int from, int size);
 
-    List<ItemDto> search(String text);
+    List<ItemDto> search(String text, int from, int size);
 
     Item getItemById(Long itemId);
 
@@ -29,6 +29,5 @@ public interface ItemService {
 
     boolean hasUserBookedItem(Long itemId, Long userId, LocalDateTime now);
 
-    // Новый метод для получения вещей по ID запроса
     List<ItemDto> getItemsByRequestId(Long requestId);
 }
